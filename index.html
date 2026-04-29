@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<!-- HYBRID_FINAL_VERSION: dark-battle-bright-learning -->
+<!-- FINAL_ACTIVITY_VERSION: paper-box-rpg-2026 -->
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+  <title>紙餐盒勇者試煉｜無抽獎版</title>
+  <style>
+    :root{
+      --bgA:#0b1020;
+      --bgB:#172554;
+      --panel:#ffffff;
+      --text:#1f2937;
+      --muted:#64748b;
+      --green:#16a34a;
+      --green2:#22c55e;
+      --red:#dc2626;
+      --gold:#f59e0b;
+      --blue:#2563eb;
+      --sky:#0ea5e9;
+      --line:#06c755;
+      --shadow:0 18px 40px rgba(0,0,0,.20);
+      --radius:22px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+      color:#fff;
+      min-height:100vh;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(34,197,94,.15), transparent 22%),
+        radial-gradient(circle at 85% 15%, rgba(245,158,11,.14), transparent 24%),
+        radial-gradient(circle at 50% 100%, rgba(14,165,233,.12), transparent 30%),
+        linear-gradient(180deg,var(--bgB),var(--bgA));
+    }
+    .wrap{width:min(1120px,100%);margin:0 auto;padding:16px 12px 32px}
+    .hero{
+      position:relative; overflow:hidden;
+      border-radius:30px; padding:22px 18px;
+      background:linear-gradient(135deg, rgba(255,255,255,.18), rgba(255,255,255,.08));
+      border:1px solid rgba(255,255,255,.18); box-shadow:var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+    .hero:before,.hero:after{content:"";position:absolute;border-radius:50%;opacity:.18}
+    .hero:before{width:220px;height:220px;background:#22c55e;right:-70px;top:-80px}
+    .hero:after{width:150px;height:150px;background:#f59e0b;left:-35px;bottom:-45px}
+    h1{margin:0 0 8px;font-size:clamp(1.7rem,4.2vw,2.4rem);line-height:1.15}
+    .sub{margin:0;color:#e5e7eb;line-height:1.8;font-size:.98rem}
+    .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+    .chip{padding:7px 11px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.16);font-size:.9rem}
+
+    .layout{display:grid;grid-template-columns:1fr;gap:14px;margin-top:16px}
+    .panel{
+      background:var(--panel); color:var(--text); border-radius:var(--radius);
+      box-shadow:var(--shadow); padding:18px;
+    }
+    .battlefield{
+      background:linear-gradient(180deg,#dbeafe 0%, #e0f2fe 35%, #dcfce7 100%);
+      border:1px solid #bfdbfe; border-radius:24px; padding:14px; overflow:hidden; position:relative;
+      min-height:300px;
+    }
+    .battlefield:before{
+      content:""; position:absolute; left:0; right:0; bottom:48px; height:84px;
+      background:linear-gradient(180deg, rgba(34,197,94,.12), rgba(22,163,74,.24));
+      border-top:2px dashed rgba(22,163,74,.28);
+    }
+    .stagebar{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px}
+    .stagepill{
+      display:inline-flex; gap:8px; align-items:center;
+      background:#fff; border:1px solid #e5e7eb; border-radius:999px; padding:8px 12px;
+      font-weight:800; color:#0f172a;
+    }
+    .turntext{font-size:.92rem;color:#475569;font-weight:800}
+    
+    .actors{display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:end; margin-top:8px}
+    .actor{text-align:center; position:relative; padding:12px 8px; z-index:1;}
+    .sprite{
+      font-size:4.2rem; line-height:1; 
+      filter:drop-shadow(0 8px 10px rgba(0,0,0,.12)); user-select:none;
+      display: inline-block; /* 確保動畫位移正常運作 */
+    }
+    .enemy .sprite{transform:scaleX(-1)}
+    .name{margin-top:8px; font-size:1rem; font-weight:900}
+    .hpbox{margin-top:8px}
+    .barlabel{display:flex;justify-content:space-between;align-items:center;font-size:.82rem;color:#475569;font-weight:800;margin-bottom:5px}
+    .hpbar{background:#e5e7eb;border-radius:999px;height:15px;overflow:hidden;border:1px solid #cbd5e1}
+    .hpfill{height:100%;transition:width .3s ease}
+    .heroHp{background:linear-gradient(90deg,#22c55e,#16a34a)}
+    .enemyHp{background:linear-gradient(90deg,#ef4444,#dc2626)}
+    .bubble{
+      margin-top:10px; background:#fff7ed; border:1px solid #fdba74; color:#7c2d12;
+      border-radius:16px; padding:11px 12px; line-height:1.7; font-size:.95rem; min-height:72px;
+    }
+
+    /* ===== 戰鬥動畫特效 ===== */
+    .impact-effect {
+      position: absolute;
+      top: 30%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 3.5rem;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* 勇者攻擊 (往右衝) */
+    @keyframes attackRight {
+      0% { transform: translateX(0); }
+      35% { transform: translateX(60px) scale(1.1); }
+      50% { transform: translateX(60px) scale(1.1); }
+      100% { transform: translateX(0) scale(1); }
+    }
+
+    /* 怪物攻擊 (往左衝) */
+    @keyframes attackLeft {
+      0% { transform: translateX(0) scaleX(-1); }
+      35% { transform: translateX(-60px) scale(1.1) scaleX(-1); }
+      50% { transform: translateX(-60px) scale(1.1) scaleX(-1); }
+      100% { transform: translateX(0) scaleX(-1); }
+    }
+
+    /* 受擊發紅震動 */
+    @keyframes takeDamage {
+      0% { transform: translateX(0); filter: drop-shadow(0 8px 10px rgba(0,0,0,.12)); }
+      20% { transform: translateX(-8px); filter: brightness(1.2) drop-shadow(0 0 15px rgba(220,38,38,.8)); }
+      40% { transform: translateX(8px); filter: brightness(0.8) drop-shadow(0 0 15px rgba(220,38,38,.8)); }
+      60% { transform: translateX(-8px); filter: brightness(1.2) drop-shadow(0 0 15px rgba(220,38,38,.8)); }
+      80% { transform: translateX(8px); filter: brightness(0.8) drop-shadow(0 0 15px rgba(220,38,38,.8)); }
+      100% { transform: translateX(0); filter: drop-shadow(0 8px 10px rgba(0,0,0,.12)); }
+    }
+    @keyframes takeDamageEnemy {
+      0% { transform: translateX(0) scaleX(-1); filter: drop-shadow(0 8px 10px rgba(0,0,0,.12)); }
+      20% { transform: translateX(-8px) scaleX(-1); filter: brightness(1.2) drop-shadow(0 0 15px rgba(220,38,38,.8)); }
+      40% { transform: translateX(8px) scaleX(-1); filter: brightness(0.8) drop-shadow(0 0 15px rgba(220,38,38,.8)); }
+      60% { transform: translateX(-8px) scaleX(-1); filter: brightness(1.2) drop-shadow(0 0 15px rgba(220,38,38,.8)); }
+      80% { transform: translateX(8px) scaleX(-1); filter: brightness(0.8) drop-shadow(0 0 15px rgba(220,38,38,.8)); }
+      100% { transform: translateX(0) scaleX(-1); filter: drop-shadow(0 8px 10px rgba(0,0,0,.12)); }
+    }
+
+    /* 打擊火花 */
+    @keyframes burst {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5) rotate(-15deg); }
+      30% { opacity: 1; transform: translate(-50%, -50%) scale(1.5) rotate(0deg); }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(2) rotate(15deg); }
+    }
+
+    .anim-hero-attack { animation: attackRight 0.6s ease-in-out forwards; }
+    .anim-enemy-attack { animation: attackLeft 0.6s ease-in-out forwards; }
+    .anim-damage-hero { animation: takeDamage 0.5s ease-in-out; }
+    .anim-damage-enemy { animation: takeDamageEnemy 0.5s ease-in-out; }
+    .anim-burst { animation: burst 0.4s ease-out forwards; }
+    /* ===================== */
+
+    .mini-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+    .stat{
+      background:linear-gradient(180deg,#f8fafc,#eef2ff);
+      border:1px solid #e5e7eb;border-radius:18px;padding:12px 10px;text-align:center;min-height:78px;
+      display:flex;justify-content:center;align-items:center;flex-direction:column;
+    }
+    .stat .label{font-size:.84rem;color:var(--muted);margin-bottom:4px}
+    .stat .value{font-size:1.14rem;font-weight:900;color:#0f172a}
+
+    .command-shell{
+      margin-top:12px;
+      background:linear-gradient(180deg,#0b1220,#111827);
+      border:3px solid #cbd5e1;
+      border-radius:24px;
+      overflow:hidden;
+      box-shadow:inset 0 0 0 2px rgba(255,255,255,.08), 0 16px 34px rgba(2,6,23,.28);
+    }
+    .command-top{padding:14px 14px 10px;border-bottom:1px solid rgba(148,163,184,.25);background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02))}
+    .rpg-tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+    .rpg-tag{display:inline-block;padding:6px 10px;border-radius:999px;font-size:.82rem;font-weight:900}
+    .rpg-green{background:#14532d;color:#dcfce7;border:1px solid rgba(255,255,255,.08)}
+    .rpg-blue{background:#1e3a8a;color:#dbeafe;border:1px solid rgba(255,255,255,.08)}
+    .rpg-gold{background:#78350f;color:#fef3c7;border:1px solid rgba(255,255,255,.08)}
+    .battle-log{
+      background:rgba(15,23,42,.72);
+      border:1px solid rgba(148,163,184,.28);
+      border-radius:16px;
+      color:#e5f0ff;
+      padding:12px;
+      line-height:1.8;
+      min-height:88px;
+      font-size:.98rem;
+    }
+    .battle-log strong{color:#fff}
+    .command-body{display:grid;grid-template-columns:1.12fr .88fr;gap:0}
+    .question-pane{padding:14px;border-right:1px solid rgba(148,163,184,.2);background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01))}
+    .question-title{color:#93c5fd;font-size:.9rem;font-weight:900;letter-spacing:.03em;margin-bottom:8px}
+    .question{color:#0f172a;font-size:1.28rem;font-weight:900;line-height:1.75;margin-bottom:12px;min-height:86px;background:linear-gradient(180deg,#ffffff,#f1f5f9);border:1px solid rgba(203,213,225,.95);border-radius:16px;padding:14px 16px;box-shadow:0 8px 18px rgba(15,23,42,.10);}
+    .helper-box{background:rgba(30,41,59,.72);border:1px solid rgba(148,163,184,.22);border-radius:16px;color:#cbd5e1;padding:11px 12px;font-size:.92rem;line-height:1.75;min-height:92px}
+    .command-pane{padding:12px;background:linear-gradient(180deg, rgba(2,6,23,.12), rgba(2,6,23,.28))}
+    .command-title{color:#fef3c7;font-size:.92rem;font-weight:900;margin-bottom:8px}
+    .choices{display:grid;gap:10px}
+    .choice{
+      width:100%;display:flex;align-items:center;gap:10px;text-align:left;border:none;cursor:pointer;
+      border-radius:16px;padding:13px 12px;font-size:.98rem;font-weight:900;
+      background:linear-gradient(180deg,#f8fafc,#e2e8f0);color:#0f172a;border:2px solid transparent;
+      transition:transform .1s ease, border-color .12s ease, box-shadow .12s ease, background .12s ease;
+      touch-action:manipulation;min-height:62px;
+    }
+    .choice .symbol{width:34px;height:34px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#dbeafe;color:#1d4ed8;font-size:1rem;flex:0 0 34px}
+    .choice .meta{display:flex;flex-direction:column;gap:3px}
+    .choice .meta .code{font-size:.82rem;color:#475569}
+    .choice .meta .label{font-size:.98rem;color:#0f172a}
+    .choice:hover{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+    .choice:active{transform:scale(.99)}
+    .choice.correct{background:linear-gradient(180deg,#dcfce7,#bbf7d0);border-color:#22c55e;color:#166534}
+    .choice.correct .symbol{background:#14532d;color:#dcfce7}
+    .choice.wrong{background:linear-gradient(180deg,#fee2e2,#fecaca);border-color:#ef4444;color:#991b1b}
+    .choice.wrong .symbol{background:#7f1d1d;color:#fee2e2}
+    .choice:disabled{cursor:default}
+
+    .feedback{display:none;margin:12px;margin-top:0;border-radius:18px;padding:14px;line-height:1.8;font-size:.96rem;font-weight:800}
+    .feedback.show{display:block}
+    .feedback.good{background:#ecfdf5;color:#166534;border:1px solid #86efac}
+    .feedback.bad{background:#fef2f2;color:#991b1b;border:1px solid #fca5a5}
+
+    .actions{display:flex;gap:10px;flex-wrap:wrap;padding:0 12px 14px}
+    .btn{border:none;border-radius:999px;padding:13px 18px;font-size:1rem;font-weight:900;cursor:pointer;touch-action:manipulation}
+    .btn-primary{background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;box-shadow:0 10px 24px rgba(34,197,94,.28)}
+    .btn-next{background:linear-gradient(135deg,#2563eb,#0ea5e9);color:#fff;box-shadow:0 10px 24px rgba(59,130,246,.28)}
+    .btn-line{background:linear-gradient(135deg,#06c755,#00b900);color:#fff;box-shadow:0 10px 24px rgba(6,199,85,.25)}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+
+    .result{display:none;text-align:center;background:#fffbeb;border:1px solid #fde68a;margin-top:14px}
+    .result.show{display:block}
+    .rank{font-size:1.22rem;font-weight:900;color:#92400e;margin-top:8px}
+    .badge{display:inline-block;margin-top:10px;padding:10px 14px;border-radius:999px;background:#dcfce7;color:#166534;font-weight:900}
+    .small{font-size:.88rem;color:#64748b;line-height:1.7}
+    .footer-note{color:#cbd5e1;text-align:center;margin-top:16px;font-size:.9rem;line-height:1.75}
+
+    @media (max-width:780px){
+      .command-body{grid-template-columns:1fr}
+      .question-pane{border-right:none;border-bottom:1px solid rgba(148,163,184,.2)}
+    }
+    @media (max-width:720px){
+      .wrap{padding:12px 10px 24px}
+      .mini-stats{grid-template-columns:repeat(2,1fr)}
+      .actors{gap:8px}
+      .sprite{font-size:3.6rem}
+      .question{font-size:1.04rem;min-height:auto}
+      .battle-log{min-height:auto}
+      .bubble{min-height:78px}
+    }
+  
+/* ===== LINE mobile browser optimization overrides ===== */
+html, body{ width:100%; max-width:100%; overflow-x:hidden; -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+body{ min-height:100dvh; }
+.wrap{ width:100% !important; max-width:680px !important; margin:0 auto !important; padding:12px 10px 24px !important; }
+.layout{ display:block !important; }
+.panel{ padding:14px !important; border-radius:18px !important; }
+.hero{ padding:18px 14px !important; border-radius:22px !important; }
+h1{ font-size:1.5rem !important; }
+.sub{ font-size:.95rem !important; line-height:1.7 !important; }
+.chips{ gap:6px !important; }
+.chip{ font-size:.82rem !important; padding:6px 10px !important; }
+.battlefield{ min-height:auto !important; padding:12px !important; border-radius:18px !important; }
+.battlefield:before{ bottom:42px !important; height:70px !important; }
+.stagebar{ gap:8px !important; }
+.stagepill{ font-size:.9rem !important; padding:8px 10px !important; }
+.turntext{ font-size:.85rem !important; }
+.actors{ grid-template-columns:1fr 1fr !important; gap:8px !important; }
+.actor{ padding:8px 4px !important; }
+.sprite{ font-size:3rem !important; }
+.name{ font-size:.92rem !important; }
+.bubble{ min-height:68px !important; padding:10px !important; font-size:.88rem !important; line-height:1.6 !important; }
+.barlabel{ font-size:.78rem !important; }
+.hpbar{ height:13px !important; }
+.mini-stats{ grid-template-columns:repeat(2,1fr) !important; gap:8px !important; margin-top:10px !important; }
+.stat{ min-height:70px !important; padding:10px 8px !important; border-radius:14px !important; }
+.stat .label{ font-size:.8rem !important; }
+.stat .value{ font-size:1rem !important; }
+.command-shell{ margin-top:10px !important; border-radius:18px !important; }
+.command-top{ padding:12px 12px 8px !important; }
+.rpg-tags{ gap:6px !important; margin-bottom:8px !important; }
+.rpg-tag{ font-size:.76rem !important; padding:5px 8px !important; }
+.battle-log{ min-height:auto !important; padding:10px !important; font-size:.9rem !important; line-height:1.7 !important; }
+.command-body{ display:block !important; }
+.question-pane{ border-right:none !important; border-bottom:1px solid rgba(148,163,184,.2) !important; padding:12px !important; }
+.question-title{ font-size:.84rem !important; margin-bottom:6px !important; }
+.question{ min-height:auto !important; font-size:1.12rem !important; line-height:1.72 !important; margin-bottom:10px !important; background:linear-gradient(180deg,#ffffff,#f1f5f9) !important; color:#0f172a !important; border:1px solid rgba(203,213,225,.95) !important; border-radius:14px !important; padding:12px 14px !important; }
+.helper-box{ min-height:auto !important; padding:10px !important; font-size:.88rem !important; line-height:1.65 !important; }
+.command-pane{ padding:10px !important; }
+.command-title{ font-size:.86rem !important; margin-bottom:8px !important; }
+.choices{ gap:8px !important; }
+.choice{ min-height:58px !important; padding:12px 10px !important; border-radius:14px !important; }
+.choice .symbol{ width:32px !important; height:32px !important; flex:0 0 32px !important; border-radius:10px !important; font-size:.95rem !important; }
+.choice .meta .code{ font-size:.76rem !important; }
+.choice .meta .label{ font-size:.92rem !important; line-height:1.45 !important; }
+.feedback{ margin:10px !important; padding:12px !important; border-radius:14px !important; font-size:.9rem !important; }
+.actions{ padding:0 10px 12px !important; gap:8px !important; }
+.btn{ width:100% !important; min-height:48px !important; padding:12px 14px !important; font-size:.96rem !important; border-radius:999px !important; }
+.result{ margin-top:12px !important; }
+.rank{ font-size:1.08rem !important; }
+.badge{ font-size:.9rem !important; line-height:1.5 !important; }
+.small{ font-size:.82rem !important; }
+.footer-note{ font-size:.82rem !important; line-height:1.65 !important; padding:0 6px !important; }
+
+/* extra small phones */
+@media (max-width:390px){
+  .wrap{padding:10px 8px 22px !important;}
+  h1{font-size:1.35rem !important;}
+  .sub{font-size:.9rem !important;}
+  .sprite{font-size:2.7rem !important;}
+  .bubble{font-size:.84rem !important;}
+  .choice .meta .label{font-size:.88rem !important;}
+}
+
+
+/* ===== Final activity readability polish ===== */
+.question{
+  color:#0f172a !important;
+  font-size:1.22rem !important;
+  font-weight:900 !important;
+  line-height:1.75 !important;
+  background:linear-gradient(180deg,#ffffff,#f1f5f9) !important;
+  border:1px solid rgba(203,213,225,.95) !important;
+  border-radius:16px !important;
+  padding:14px 16px !important;
+  box-shadow:0 8px 18px rgba(15,23,42,.10) !important;
+}
+.question-title{
+  color:#fde68a !important;
+}
+.battle-log strong{
+  color:#fde68a !important;
+}
+.footer-note{
+  display:none !important;
+}
+@media (max-width:390px){
+  .question{
+    font-size:1.08rem !important;
+    padding:12px 14px !important;
+  }
+}
+
+
+/* ===== Mobile battle visibility fix ===== */
+@media (max-width: 720px){
+  .battlefield{
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 80 !important;
+    box-shadow: 0 10px 24px rgba(15,23,42,.22) !important;
+  }
+
+  .command-shell{
+    max-height: 56vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .battlefield.compact-battle{
+    transform: scale(.96);
+    transform-origin: top center;
+    margin-bottom: -8px !important;
+  }
+
+  .actors{
+    align-items: start !important;
+  }
+
+  .bubble{
+    max-height: 92px !important;
+    overflow-y: auto !important;
+  }
+}
+
+/* 當動畫觸發時，讓戰鬥區更醒目 */
+.battlefield.battle-focus{
+  outline: 3px solid rgba(245,158,11,.45);
+  outline-offset: 2px;
+}
+
+
+/* ===== Hybrid A+B final style: dark battle + bright learning UI ===== */
+.hero{
+  background:linear-gradient(135deg,rgba(15,23,42,.88),rgba(30,41,59,.68)) !important;
+  border:1px solid rgba(250,204,21,.22) !important;
+  box-shadow:0 18px 42px rgba(0,0,0,.36), inset 0 0 32px rgba(251,191,36,.08) !important;
+}
+.hero h1{
+  color:#fef3c7 !important;
+  text-shadow:0 3px 18px rgba(0,0,0,.6) !important;
+}
+.sub{
+  color:#fde68a !important;
+}
+.chip{
+  background:rgba(15,23,42,.7) !important;
+  border:1px solid rgba(250,204,21,.25) !important;
+  color:#fef3c7 !important;
+}
+
+.battlefield{
+  background:
+    radial-gradient(circle at 50% 18%, rgba(245,158,11,.22), transparent 22%),
+    radial-gradient(circle at 12% 85%, rgba(127,29,29,.22), transparent 24%),
+    linear-gradient(180deg,#111827 0%, #1f2937 52%, #0f172a 100%) !important;
+  border:2px solid rgba(120,53,15,.9) !important;
+  box-shadow:0 12px 34px rgba(0,0,0,.45), inset 0 0 34px rgba(0,0,0,.45) !important;
+}
+.battlefield:before{
+  background:linear-gradient(180deg,rgba(120,53,15,.14),rgba(22,163,74,.20)) !important;
+  border-top:2px dashed rgba(250,204,21,.22) !important;
+}
+.stagepill{
+  background:#111827 !important;
+  border:1px solid rgba(250,204,21,.35) !important;
+  color:#fde68a !important;
+}
+.turntext{
+  color:#fde68a !important;
+}
+.actor .name{
+  color:#fef3c7 !important;
+  text-shadow:0 2px 8px rgba(0,0,0,.55) !important;
+}
+.sprite{
+  filter:drop-shadow(0 10px 14px rgba(0,0,0,.55)) saturate(1.12) !important;
+}
+.bubble{
+  background:rgba(255,247,237,.95) !important;
+  color:#7c2d12 !important;
+  border:1px solid rgba(251,146,60,.9) !important;
+}
+
+.command-shell{
+  background:linear-gradient(180deg,#0b1220,#111827) !important;
+  border:3px solid rgba(250,204,21,.34) !important;
+}
+.command-top{
+  background:linear-gradient(180deg,rgba(250,204,21,.09),rgba(255,255,255,.02)) !important;
+}
+.battle-log{
+  background:rgba(15,23,42,.88) !important;
+  border:1px solid rgba(250,204,21,.24) !important;
+  color:#fef3c7 !important;
+}
+.question-pane{
+  background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02)) !important;
+}
+.question-title{
+  color:#fde68a !important;
+  font-size:.92rem !important;
+}
+.question{
+  color:#0f172a !important;
+  font-size:1.24rem !important;
+  font-weight:950 !important;
+  line-height:1.78 !important;
+  background:linear-gradient(180deg,#ffffff,#f8fafc) !important;
+  border:2px solid #fde68a !important;
+  border-radius:18px !important;
+  padding:16px 18px !important;
+  box-shadow:0 10px 26px rgba(0,0,0,.22) !important;
+}
+.helper-box{
+  background:rgba(30,41,59,.92) !important;
+  border:1px solid rgba(250,204,21,.22) !important;
+  color:#e5e7eb !important;
+}
+.choice{
+  background:linear-gradient(180deg,#ffffff,#e0f2fe) !important;
+  border:2px solid rgba(147,197,253,.65) !important;
+}
+.choice .symbol{
+  background:#1e3a8a !important;
+  color:#dbeafe !important;
+}
+.choice .meta .label{
+  font-size:1rem !important;
+}
+.result{
+  background:linear-gradient(180deg,#fffbeb,#fef3c7) !important;
+  border:2px solid #f59e0b !important;
+}
+@media (max-width:720px){
+  .battlefield{
+    max-height:46vh !important;
+  }
+  .question{
+    font-size:1.1rem !important;
+    padding:13px 14px !important;
+  }
+  .command-shell{
+    max-height:58vh !important;
+  }
+}
+
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>🛡️ 紙餐盒勇者試煉</h1>
+      <p class="sub">
+        踏上紙餐盒分類試煉，成為環保勇者
+      </p>
+      <div class="chips">
+        <span class="chip">🍱 紙餐盒分類</span>
+        <span class="chip">📘 固定關卡</span>
+        <span class="chip">♻️ 回收流程</span>
+        <span class="chip">📱 手機可玩</span>
+      </div>
+    </section>
+
+    <section class="layout">
+      <div class="panel">
+        <div class="battlefield compact-battle">
+          <div class="stagebar">
+            <div class="stagepill" id="stageText">🗺️ 第 0 題 / 15 題</div>
+            <div class="turntext" id="turnText">準備出發</div>
+          </div>
+
+          <div class="actors">
+            <div class="actor hero">
+              <div class="sprite" id="heroIcon">🧝‍♂️</div>
+              <div class="impact-effect" id="heroImpact">💥</div>
+              <div class="name">環保勇者</div>
+              <div class="hpbox">
+                <div class="barlabel"><span>HP</span><span id="heroHpText">5 / 5</span></div>
+                <div class="hpbar"><div class="hpfill heroHp" id="heroHpBar" style="width:100%"></div></div>
+              </div>
+              <div class="bubble" id="heroBubble">準備出發！一起完成 15 題冒險挑戰吧！</div>
+            </div>
+
+            <div class="actor enemy">
+              <div class="sprite" id="sceneIcon">🌿</div>
+              <div class="impact-effect" id="enemyImpact">💥</div>
+              <div class="name" id="sceneName">環境任務</div>
+              <div class="hpbox">
+                <div class="barlabel"><span>任務進度</span><span id="enemyHpText">1 / 1</span></div>
+                <div class="hpbar"><div class="hpfill enemyHp" id="enemyHpBar" style="width:100%"></div></div>
+              </div>
+              <div class="bubble" id="enemyBubble">請仔細閱讀情境，找出最適合的處理方式。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mini-stats">
+          <div class="stat"><div class="label">勇者分數</div><div class="value" id="scoreText">0</div></div>
+          <div class="stat"><div class="label">答對題數</div><div class="value" id="correctText">0</div></div>
+          <div class="stat"><div class="label">剩餘生命</div><div class="value" id="lifeText">5</div></div>
+          <div class="stat"><div class="label">通關門檻</div><div class="value">100 分</div></div>
+        </div>
+
+        <div class="command-shell">
+          <div class="command-top">
+            <div class="rpg-tags">
+              <span class="rpg-tag rpg-green" id="typeTag">冒險說明</span>
+              <span class="rpg-tag rpg-blue" id="areaTag">起始營地</span>
+              <span class="rpg-tag rpg-gold">每題答對 +10 分</span>
+            </div>
+            <div class="battle-log" id="battleLog">
+              <strong>任務提示：</strong> 請依據勇者任務選出最合適的行動。每答對 1 題得 10 分，答錯則失去 1 點生命。
+            </div>
+          </div>
+
+          <div class="command-body">
+            <div class="question-pane">
+              <div class="question-title">🗺️ 勇者任務</div>
+              <div class="question" id="questionText">準備好進入紙餐盒分類冒險了嗎？</div>
+              <div class="helper-box" id="helperBox">
+                你會在不同場景中遇到需要判斷分類與處理方式的物品。請依情境展現身為勇者的智慧、勇氣與力量，完成任務並累積分數。
+              </div>
+            </div>
+
+            <div class="command-pane">
+              <div class="command-title">⚡ 請選擇行動</div>
+              <div class="choices" id="choicesBox"></div>
+            </div>
+          </div>
+
+          <div class="feedback" id="feedbackBox"></div>
+
+          <div class="actions">
+            <button class="btn btn-primary" id="startBtn">開始冒險</button>
+            <button class="btn btn-next" id="nextBtn" style="display:none;">前往下一題 ➜</button>
+          </div>
+        </div>
+
+        <div class="panel result" id="resultBox">
+          <h2 style="margin:0 0 8px; color:#92400e;">🏆 挑戰完成！</h2>
+          <p id="resultDesc" style="color:#78350f; line-height:1.85; margin:0;"></p>
+          <div class="rank" id="rankText"></div>
+          <div class="badge" id="badgeText"></div><p class="small" style="margin-top:12px;">感謝完成紙餐盒分類試煉，請把正確回收觀念帶回生活中。</p>
+          <div class="actions" style="justify-content:center; margin-top:18px;">
+            
+            <button class="btn btn-primary" onclick="restartGame()">再玩一次</button>
+          </div>
+          
+        </div>
+      </div>
+    </section>
+
+    <p class="footer-note"></p>
+  </div>
+
+<script>
+  const LINE_DRAW_URL = "#"; // TODO：請替換為正式 LINE 抽獎連結 
+
+  const FIXED_STAGES = [{"stageTitle": "第一關｜油污危機", "area": "你來到便當村，油污怪正在污染餐盒。", "type": "油污判斷", "icon": "🍱", "hero": "勇者：這些餐盒還能回收嗎？", "enemy": "油污怪：哈哈！我已經讓它變得無法回收了！", "question": "回收前第一步？", "choices": [{"key": "A", "text": "直接丟"}, {"key": "B", "text": "清除殘渣"}, {"key": "C", "text": "壓扁"}], "answer": "B", "tip": "需先清除殘渣"}, {"stageTitle": "第二關｜分類試煉", "area": "分類神殿守門人出現。", "type": "流程", "icon": "♻️", "hero": "勇者：讓我證明我會分類！", "enemy": "守門人：選錯就無法通過！", "question": "乾淨紙餐盒應？", "choices": [{"key": "A", "text": "一般垃圾"}, {"key": "B", "text": "紙容器回收"}, {"key": "C", "text": "紙類回收"}], "answer": "B", "tip": "有特殊膠膜需以紙容器回收"}, {"stageTitle": "第三關｜危機判斷", "area": "外送驛站被油污籠罩。", "type": "分類", "icon": "🛵", "hero": "勇者：這種狀況要判斷！", "enemy": "油污：你分得清嗎？", "question": "少量油漬的紙餐盒該如何處理？", "choices": [{"key": "A", "text": "直接回收"}, {"key": "B", "text": "沖洗後紙容器回收"}, {"key": "C", "text": "一般垃圾"}], "answer": "B", "tip": "應去除油污避免影響回收品質"}, {"stageTitle": "第四關｜觀念挑戰", "area": "圖書館出現知識之靈。", "type": "判斷", "icon": "📘", "hero": "勇者：我要理解原因！", "enemy": "知識之靈：答對才是真懂！", "question": "餐盒為何不能當作紙類回收", "choices": [{"key": "A", "text": "太重"}, {"key": "B", "text": "餐盒有塑膠淋膜需特殊處理"}, {"key": "C", "text": "沒價值"}], "answer": "B", "tip": "紙餐盒塑膠淋膜需特殊處理"}, {"stageTitle": "第五關｜分離試煉", "area": "分類站出現分離獸。", "type": "觀念", "icon": "🍱", "hero": "勇者：不同材質要分開！", "enemy": "分離獸：混在一起就完了！", "question": "餐盒與塑膠蓋應如何回收？", "choices": [{"key": "A", "text": "一起回收"}, {"key": "B", "text": "分開回收"}, {"key": "C", "text": "丟一般垃圾"}], "answer": "B", "tip": "材質不同需分開處理"}, {"stageTitle": "第六關｜清潔任務", "area": "你進入清潔工坊，殘渣魔四處散落。", "type": "流程", "icon": "🧽", "hero": "勇者：要先處理這些殘渣！", "enemy": "殘渣魔：不清理我，你就失敗了！", "question": "裝湯紙盒應？", "choices": [{"key": "A", "text": "紙類回收"}, {"key": "B", "text": "沖水後紙容器回收"}, {"key": "C", "text": "一般垃圾"}], "answer": "B", "tip": "去除油污才能回收"}, {"stageTitle": "第七關｜入侵危機", "area": "發霉蟲入侵回收聖地。", "type": "判斷", "icon": "🍱", "hero": "勇者：不能讓發霉蟲污染回收！", "enemy": "發霉蟲：看我讓你們沒辦法正常回收！", "question": "紙餐盒放太久發霉發臭怎麼處理?", "choices": [{"key": "A", "text": "紙容器回收"}, {"key": "B", "text": "丟一般垃圾"}, {"key": "C", "text": "紙類回收"}], "answer": "B", "tip": "過度油污發霉發臭無法回收屬於一般垃圾"}, {"stageTitle": "第八關｜宣傳任務", "area": "要如何將回收理念分享給每一位勇者。", "type": "情境", "icon": "🍱", "hero": "勇者：你願意加入回收勇者行列嗎?", "enemy": "紙餐盒怪：可惡勇者變多我要被回收了!", "question": "家人說便當紙盒直接丟一般垃圾怎麼辦?", "choices": [{"key": "A", "text": "跟著丟一般垃圾"}, {"key": "B", "text": "解釋倒乾淨可以紙容器回收"}, {"key": "C", "text": "當作紙類回收"}], "answer": "B", "tip": "要記得提醒家人一起做好紙容器回收"}, {"stageTitle": "第九關｜公司任務", "area": "武器站選擇勇者的武器。", "type": "情境", "icon": "🏢", "hero": "勇者：該如何減少紙餐盒？", "enemy": "守衛：挑選屬於勇者的減量武器！", "question": "外帶早餐可以如何減少垃圾量?", "choices": [{"key": "A", "text": "使用塑膠袋"}, {"key": "B", "text": "自備環保餐盒"}, {"key": "C", "text": "索取竹筷塑膠湯匙"}], "answer": "B", "tip": "自備循環餐盒可減少垃圾量"}, {"stageTitle": "最終關｜勇者試煉", "area": "你來到最終聖殿，環保之王現身。", "type": "綜合", "icon": "👑", "hero": "勇者：我已擁有環保之力", "enemy": "環保之王：請讓我看看你所得到的力量！", "question": "勇者可以如何用回收保護地球?", "choices": [{"key": "A", "text": "增加污染"}, {"key": "B", "text": "減少垃圾落實資源循環"}, {"key": "C", "text": "可以侵占動物生存空間"}], "answer": "B", "tip": "讓資源循環再利用減少垃圾產生"}];
+
+  const skillMap = { "A":"行動一", "B":"行動二", "C":"行動三" };
+  const iconMap = { "A":"🧭", "B":"✨", "C":"🛡️" };
+
+  function getMonsterIcon(q) {
+    const text = String(q.stageTitle + q.type + q.area + q.hero + q.enemy + q.question + q.tip);
+    if (text.includes("最終") || text.includes("聖殿") || text.includes("環保之王") || text.includes("勇者試煉")) return "👑";
+    if (text.includes("油") || text.includes("污")) return "🛢️";
+    if (text.includes("殘渣") || text.includes("食物") || text.includes("飯粒") || text.includes("發霉")) return "🍖";
+    if (text.includes("清潔") || text.includes("沖洗") || text.includes("洗")) return "🧽";
+    if (text.includes("分離") || text.includes("材質") || text.includes("塑膠蓋")) return "🧩";
+    if (text.includes("分類") || text.includes("回收")) return "♻️";
+    if (text.includes("外送") || text.includes("早餐")) return "🛵";
+    if (text.includes("觀念") || text.includes("原因") || text.includes("知識")) return "📘";
+    if (text.includes("減少") || text.includes("環保") || text.includes("循環")) return "🌱";
+    if (text.includes("整理") || text.includes("公司") || text.includes("辦公室")) return "📦";
+    return "🍱";
+  }
+
+
+  let current = -1;
+  let score = 0;
+  let correctCount = 0;
+  let heroLife = 5;
+  let missionValue = 1;
+  let locked = false;
+
+  const stageText = document.getElementById("stageText");
+  const turnText = document.getElementById("turnText");
+  const heroBubble = document.getElementById("heroBubble");
+  const enemyBubble = document.getElementById("enemyBubble");
+  const sceneName = document.getElementById("sceneName");
+  const sceneIcon = document.getElementById("sceneIcon");
+  const heroIcon = document.getElementById("heroIcon");
+  const heroHpText = document.getElementById("heroHpText");
+  const enemyHpText = document.getElementById("enemyHpText");
+  const heroHpBar = document.getElementById("heroHpBar");
+  const enemyHpBar = document.getElementById("enemyHpBar");
+  const heroImpact = document.getElementById("heroImpact");
+  const enemyImpact = document.getElementById("enemyImpact");
+
+  const scoreText = document.getElementById("scoreText");
+  const correctText = document.getElementById("correctText");
+  const lifeText = document.getElementById("lifeText");
+  const typeTag = document.getElementById("typeTag");
+  const areaTag = document.getElementById("areaTag");
+  const questionText = document.getElementById("questionText");
+  const helperBox = document.getElementById("helperBox");
+  const battleLog = document.getElementById("battleLog");
+  const choicesBox = document.getElementById("choicesBox");
+  const feedbackBox = document.getElementById("feedbackBox");
+  const startBtn = document.getElementById("startBtn");
+  const nextBtn = document.getElementById("nextBtn");
+  const resultBox = document.getElementById("resultBox");
+  const resultDesc = document.getElementById("resultDesc");
+  const rankText = document.getElementById("rankText");
+  const badgeText = document.getElementById("badgeText");
+  const lineBtn = document.getElementById("lineBtn");
+
+  function updateUI() {
+    scoreText.textContent = score;
+    correctText.textContent = correctCount;
+    lifeText.textContent = heroLife;
+    heroHpText.textContent = `${heroLife} / 5`;
+    heroHpBar.style.width = `${(heroLife / 5) * 100}%`;
+    enemyHpText.textContent = `${missionValue} / 1`;
+    enemyHpBar.style.width = `${missionValue * 100}%`;
+    stageText.textContent = current < 0 ? `🗺️ 第 0 關 / ${FIXED_STAGES.length} 關` : `🗺️ 第 ${current + 1} 關 / ${FIXED_STAGES.length} 關`;
+  }
+
+  function renderIntro() {
+    current = -1;
+    score = 0;
+    correctCount = 0;
+    heroLife = 5;
+    missionValue = 1;
+    locked = false;
+
+    document.querySelector(".sub").textContent = "踏上紙餐盒分類試煉，成為環保勇者";
+    const chips = document.querySelector(".chips");
+    chips.innerHTML = `
+      <span class="chip">🍱 紙餐盒分類</span>
+      <span class="chip">📘 固定 ${FIXED_STAGES.length} 關</span>
+      <span class="chip">♻️ 回收流程</span>
+      <span class="chip">📱 手機可玩</span>
+    `;
+    
+    turnText.textContent = "準備出發";
+    heroBubble.textContent = `準備出發！完成 ${FIXED_STAGES.length} 關紙餐盒分類試煉吧！`;
+    enemyBubble.textContent = "請仔細閱讀情境，找出最適合的紙餐盒處理方式。";
+    sceneName.textContent = "紙餐盒任務";
+    sceneIcon.textContent = "🍱";
+
+    typeTag.textContent = "冒險說明";
+    areaTag.textContent = "起始營地";
+    battleLog.innerHTML = `<strong>任務提示：</strong>請依據冒險選出最合適的行動`;
+    questionText.textContent = "準備好進入紙餐盒分類冒險了嗎？";
+    helperBox.textContent = "你會在不同場景中遇到紙餐盒回收流程與注意事項。請依情境展現身為勇者的智慧、勇氣與力量，完成任務並累積分數。";
+    choicesBox.innerHTML = "";
+    feedbackBox.className = "feedback";
+    feedbackBox.textContent = "";
+    startBtn.style.display = "inline-block";
+    nextBtn.style.display = "none";
+    resultBox.classList.remove("show");
+    if (lineBtn) lineBtn.href = LINE_DRAW_URL;
+    updateUI();
+  }
+
+  function renderQuestion() {
+    const q = FIXED_STAGES[current];
+    missionValue = 1;
+    locked = false;
+
+    turnText.textContent = "任務進行中";
+    heroBubble.textContent = q.hero;
+    enemyBubble.textContent = `${getMonsterIcon(q)} ${q.enemy}`;
+    sceneName.textContent = q.stageTitle;
+    sceneIcon.textContent = getMonsterIcon(q);
+    typeTag.textContent = q.type;
+    areaTag.textContent = q.stageTitle;
+
+    battleLog.innerHTML = `<strong>勇者任務：</strong>${q.area}`;
+    questionText.textContent = q.question;
+    helperBox.textContent = `任務提示：${q.tip}`;
+    feedbackBox.className = "feedback";
+    feedbackBox.textContent = "";
+
+    choicesBox.innerHTML = "";
+    q.choices.forEach(choice => {
+      const btn = document.createElement("button");
+      btn.className = "choice";
+      btn.innerHTML = `
+        <div class="symbol">${iconMap[choice.key] || "🧭"}</div>
+        <div class="meta">
+          <div class="code">${choice.key}. ${skillMap[choice.key] || "行動選擇"}</div>
+          <div class="label">${choice.text}</div>
+        </div>`;
+      btn.addEventListener("click", () => answer(choice.key, btn));
+      choicesBox.appendChild(btn);
+    });
+
+    startBtn.style.display = "none";
+    nextBtn.style.display = "none";
+    updateUI();
+  }
+
+
+  function focusBattlefield() {
+    const field = document.querySelector(".battlefield");
+    if (!field) return;
+    field.classList.add("battle-focus");
+    field.scrollIntoView({ behavior: "smooth", block: "start" });
+    setTimeout(() => field.classList.remove("battle-focus"), 1200);
+  }
+
+  function answer(key, btn) {
+    if (locked) return;
+    focusBattlefield();
+    locked = true;
+    const q = FIXED_STAGES[current];
+    const buttons = [...document.querySelectorAll(".choice")];
+    buttons.forEach(b => b.disabled = true);
+    const correctBtn = buttons.find((_, idx) => q.choices[idx].key === q.answer);
+
+    if (key === q.answer) {
+      // ===== 勇者攻擊動畫 =====
+      heroIcon.classList.add("anim-hero-attack");
+      
+      // 等待衝刺到對手面前時 (約 250ms)，觸發火花與扣血 UI
+      setTimeout(() => {
+        enemyImpact.classList.add("anim-burst");
+        sceneIcon.classList.add("anim-damage-enemy");
+
+        missionValue = 0;
+        score += 10;
+        correctCount += 1;
+        btn.classList.add("correct");
+        heroBubble.textContent = "處理正確！這項紙餐盒任務已順利完成。";
+        enemyBubble.textContent = "已成功排除這次的分類風險。";
+        battleLog.innerHTML = `<strong>任務結果：</strong>你做出了正確判斷，成功完成「${q.stageTitle}」。`;
+        feedbackBox.className = "feedback show good";
+        feedbackBox.innerHTML = `✅ <strong>答對了！</strong><br>${q.tip}`;
+        updateUI();
+      }, 250);
+
+      // 動畫結束後清除 class 並顯示下一步
+      setTimeout(() => {
+        heroIcon.classList.remove("anim-hero-attack");
+        sceneIcon.classList.remove("anim-damage-enemy");
+        enemyImpact.classList.remove("anim-burst");
+        checkNextPhase();
+      }, 800);
+
+    } else {
+      // ===== 怪物反擊動畫 =====
+      sceneIcon.classList.add("anim-enemy-attack");
+
+      // 等待衝刺到勇者面前時
+      setTimeout(() => {
+        heroImpact.classList.add("anim-burst");
+        heroIcon.classList.add("anim-damage-hero");
+
+        heroLife = Math.max(0, heroLife - 1);
+        btn.classList.add("wrong");
+        if (correctBtn) correctBtn.classList.add("correct");
+        heroBubble.textContent = "這次判斷失誤，再仔細想一想。";
+        enemyBubble.textContent = `${getMonsterIcon(q)} 怪物威力提升了！`;
+        battleLog.innerHTML = `<strong>任務結果：</strong>這次處理方式不夠正確，請記住較適合的做法。`;
+        feedbackBox.className = "feedback show bad";
+        feedbackBox.innerHTML = `❌ <strong>答錯了。</strong><br>正確答案是 ${q.answer}。${q.tip}`;
+        updateUI();
+      }, 250);
+
+      setTimeout(() => {
+        sceneIcon.classList.remove("anim-enemy-attack");
+        heroIcon.classList.remove("anim-damage-hero");
+        heroImpact.classList.remove("anim-burst");
+        checkNextPhase();
+      }, 800);
+    }
+  }
+
+  function checkNextPhase() {
+    if (heroLife <= 0) {
+      showResult();
+      return;
+    }
+    if (current < FIXED_STAGES.length - 1) {
+      nextBtn.style.display = "inline-block";
+    } else {
+      showResult();
+    }
+  }
+
+  function nextQuestion() {
+    current += 1;
+    if (current >= FIXED_STAGES.length) {
+      showResult();
+      return;
+    }
+    renderQuestion();
+  }
+
+  function showResult() {
+    turnText.textContent = "結算完成";
+    resultBox.classList.add("show");
+    nextBtn.style.display = "none";
+
+    let rank = "";
+    let badge = "";
+    if (score >= Math.max(80, FIXED_STAGES.length * 8)) {
+      rank = "👑 紙餐盒分類達人";
+      badge = "你已完成全部紙餐盒試煉！";
+    } else if (score >= Math.max(60, FIXED_STAGES.length * 6)) {
+      rank = "🏆 合格環保勇者";
+      badge = "你已掌握多數紙餐盒分類觀念！";
+    } else {
+      rank = "🌱 見習勇者";
+      badge = "再挑戰一次，讓分類觀念更穩固！";
+    }
+
+    resultDesc.innerHTML = `本次共答對 <strong>${correctCount}</strong> 題，獲得 <strong>${score}</strong> 分，剩餘生命 <strong>${heroLife}</strong> 點。<br>你已完成固定 ${FIXED_STAGES.length} 關的紙餐盒分類試煉。`;
+    rankText.textContent = rank;
+    badgeText.textContent = badge;
+  }
+
+  function restartGame() {
+    renderIntro();
+  }
+
+  function handlePlaceholderLine(e) {
+    if (LINE_DRAW_URL === "#" || !LINE_DRAW_URL) {
+      e.preventDefault();
+      alert("你已完成挑戰！");
+    }
+  }
+
+  startBtn.addEventListener("click", nextQuestion);
+  nextBtn.addEventListener("click", nextQuestion);
+  if (lineBtn) lineBtn.addEventListener("click", handlePlaceholderLine);
+
+  renderIntro();
+  window.restartGame = restartGame;
+</script>
+
+</body>
+</html>
